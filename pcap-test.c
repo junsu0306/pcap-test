@@ -2,6 +2,17 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#define SIZE_ETHERNET 14
+
+
+const struct sniff_ethernet *ethernet;
+const struct sniff_ip *ip; 
+const struct sniff_tcp *tcp; 
+const char *payload; 
+
+u_int size_ip;
+u_int size_tcp;
+
 void usage() {
 	printf("syntax: pcap-test <interface>\n");
 	printf("sample: pcap-test wlan0\n");
@@ -24,6 +35,21 @@ bool parse(Param* param, int argc, char* argv[]) {
 	return true;
 }
 
+void find_tcp(const u_char* packet){
+	ethernet = (struct sniff_ethernet*)(packet);
+	ip=(struct sniff_ip*)(packet + SIZE_ETHERNET);
+	size_ip=IP_HL(ip)*4;
+	if (size_ip<20)
+		return 0;
+	tcp = (struct sniff_tcp*)(packet + SIZE_ETHERNET + size_ip);
+	size_tcp = TH_OFF(tcp)*4;
+	if (size_tcp<20)
+		return 0;
+	else{
+		return 1;
+	}
+}
+
 int main(int argc, char* argv[]) {
 	if (!parse(&param, argc, argv))
 		return -1;
@@ -44,8 +70,12 @@ int main(int argc, char* argv[]) {
 			printf("pcap_next_ex return %d(%s)\n", res, pcap_geterr(pcap));
 			break;
 		}
-		printf("%u bytes captured\n", header->caplen);
+		if (find_tcp(packet)!= 0){
+
+		}
 	}
 
 	pcap_close(pcap);
+
+	
 }
