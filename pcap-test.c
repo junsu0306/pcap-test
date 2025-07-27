@@ -65,7 +65,7 @@ void find_and_print_tcpinfo(const u_char* packet){
 		for (int i = 0; i < 20; i++) {
 			printf("%02x ", payload[i]);
 		}
-		printf("\n");
+		printf("\n========== NEW PACKET ==========\n\n");
 	}
 }
 
