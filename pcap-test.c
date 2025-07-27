@@ -1,7 +1,8 @@
 #include <pcap.h>
 #include <stdbool.h>
 #include <stdio.h>
-
+#include "structures.h"
+#include <arpa/inet.h>
 #define SIZE_ETHERNET 14
 
 
@@ -35,18 +36,36 @@ bool parse(Param* param, int argc, char* argv[]) {
 	return true;
 }
 
-void find_tcp(const u_char* packet){
+//https://www.tcpdump.org/pcap.html 구조 활용
+void find_and_print_tcpinfo(const u_char* packet){
 	ethernet = (struct sniff_ethernet*)(packet);
 	ip=(struct sniff_ip*)(packet + SIZE_ETHERNET);
 	size_ip=IP_HL(ip)*4;
 	if (size_ip<20)
-		return 0;
+		return;
 	tcp = (struct sniff_tcp*)(packet + SIZE_ETHERNET + size_ip);
 	size_tcp = TH_OFF(tcp)*4;
 	if (size_tcp<20)
-		return 0;
+		return;
 	else{
-		return 1;
+		printf("<Ethernet Header>\n");
+		printf("Source: %02x:%02x:%02x:%02x:%02x:%02x\n",
+				ethernet->ether_shost[0], ethernet->ether_shost[1],ethernet->ether_shost[2], ethernet->ether_shost[3],ethernet->ether_shost[4], ethernet->ether_shost[5]);
+		printf("Destination: %02x:%02x:%02x:%02x:%02x:%02x\n",
+				ethernet->ether_dhost[0], ethernet->ether_dhost[1],ethernet->ether_dhost[2], ethernet->ether_dhost[3],ethernet->ether_dhost[4], ethernet->ether_dhost[5]);
+		printf("<IP Header>\n");
+		printf("Source: %s\n", inet_ntoa(ip->ip_src));
+		printf("Destination: %s\n", inet_ntoa(ip->ip_dst));
+		printf("<TCP Header>\n");
+		printf("Source Port: %d\n", ntohs(tcp->th_sport));
+		printf("Destination Port: %d\n", ntohs(tcp->th_dport));
+		printf("<Payload>\n");
+		const u_char* payload = packet + SIZE_ETHERNET + size_ip + size_tcp;
+
+		for (int i = 0; i < 20; i++) {
+			printf("%02x ", payload[i]);
+		}
+		printf("\n");
 	}
 }
 
@@ -70,12 +89,12 @@ int main(int argc, char* argv[]) {
 			printf("pcap_next_ex return %d(%s)\n", res, pcap_geterr(pcap));
 			break;
 		}
-		if (find_tcp(packet)!= 0){
-
-		}
+		find_and_print_tcpinfo(packet);
 	}
 
 	pcap_close(pcap);
+	return 0;
+	
 
 	
 }
