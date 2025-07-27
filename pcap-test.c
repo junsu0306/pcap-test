@@ -45,9 +45,15 @@ void find_and_print_tcpinfo(const u_char* packet){
 		return;
 	tcp = (struct sniff_tcp*)(packet + SIZE_ETHERNET + size_ip);
 	size_tcp = TH_OFF(tcp)*4;
+
+	int total_len = ntohs(ip->ip_len);
+	int payload_len = total_len-(size_ip+size_tcp);
+	const u_char* payload = packet + SIZE_ETHERNET + size_ip + size_tcp;
+
 	if (size_tcp<20)
 		return;
 	else{
+		printf("\n========== NEW PACKET ==========\n\n");
 		printf("<Ethernet Header>\n");
 		printf("Source: %02x:%02x:%02x:%02x:%02x:%02x\n",
 				ethernet->ether_shost[0], ethernet->ether_shost[1],ethernet->ether_shost[2], ethernet->ether_shost[3],ethernet->ether_shost[4], ethernet->ether_shost[5]);
@@ -60,12 +66,16 @@ void find_and_print_tcpinfo(const u_char* packet){
 		printf("Source Port: %d\n", ntohs(tcp->th_sport));
 		printf("Destination Port: %d\n", ntohs(tcp->th_dport));
 		printf("<Payload>\n");
-		const u_char* payload = packet + SIZE_ETHERNET + size_ip + size_tcp;
 
-		for (int i = 0; i < 20; i++) {
-			printf("%02x ", payload[i]);
+		if (payload_len > 0) {
+ 		for (int i = 0; i < payload_len && i < 20; i++) {
+        	printf("%02x ", payload[i]);
+    		}
+    		printf("\n");
+		} else {
+    		printf("No Payload\n");
 		}
-		printf("\n========== NEW PACKET ==========\n\n");
+		
 	}
 }
 
